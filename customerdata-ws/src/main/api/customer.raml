@@ -1,0 +1,62 @@
+#%RAML 0.8
+baseUri: https://mocksvc.mulesoft.com/mocks/243b9019-c9fd-4045-9a37-f1f9bbc7f445
+title: Customers API
+version: 1.0
+
+/listOfCustomers:  
+  get:
+    responses: 
+      200:
+        body: 
+          application/json:
+            example: |
+              [{"ID":1, "fname": "Varun","lname": "Mehta", "Address": "Westmead", "ModifiedDate" :"2016/03/20"},{"ID" :2,"fname": "Jane","lname":"haffa","Address":"Westmead","ModifiedDate":"2017/02/23"}]
+
+  post:
+    body: 
+      application/json:
+        example: |
+          [{"ID":3, "fname": "Varun","lname": "Mehta", "Address": "Westmead", "ModifiedDate" :"2016/03/20"}]
+    responses: 
+      201:
+        body: 
+          application/json:
+            example: |
+              {"message": "Customer Added"}
+
+/getCustomerByQueryParam:
+  get:
+    queryParameters:
+        FNAME:
+        LNAME:
+        ADDRESS:
+        
+    responses: 
+        200:
+          body: 
+            application/json:
+              example: |
+                  [{"ID":1, "fname": "Varun","lname": "Mehta", "Address": "Westmead", "ModifiedDate" :"2016/03/20"}]
+/getCustomerByID{ID}:
+    get:
+      responses: 
+        200:
+          body: 
+            application/json:
+              example: |
+                  [{"ID":1, "fname": "Varun","lname": "Mehta", "Address": "Westmead", "ModifiedDate" :"2016/03/20"}]
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+       

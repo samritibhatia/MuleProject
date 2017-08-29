@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+    <spring:beans>
+        <spring:bean id="jdbcDataSource" name="Bean" class="org.enhydra.jdbc.standard.StandardDataSource" scope="prototype">
+            <spring:property name="user" value="sa"/>
+            <spring:property name="driverName" value="org.h2.Driver"/>
+            <spring:property name="url" value="jdbc:h2:~/test"/>
+        </spring:bean>
+    </spring:beans>
+    <db:generic-config name="Generic_Database_Configuration" dataSource-ref="jdbcDataSource" doc:name="Generic Database Configuration"/>
+    <file:connector name="File" writeToDirectory="C:\Users\Jatin\Desktop\Samriti" autoDelete="true" streaming="true" validateConnections="true" doc:name="File"/>
+    <flow name="getListofCustomers">
+        <db:select config-ref="Generic_Database_Configuration" doc:name="QueryListOfCustomers">
+            <db:parameterized-query><![CDATA[SELECT * FROM CUSTOMERS]]></db:parameterized-query>
+        </db:select>
+        <logger message="Payload Type is #[payload.type]" level="INFO" doc:name="Logger"/>
+        <flow-ref name="resultFromDatabase" doc:name="resultFromDatabase"/>
+        <file:outbound-endpoint path="C:\Users\Jatin\Desktop\Samriti\Mule" outputPattern="CustomerListFile" connector-ref="File" responseTimeout="10000" doc:name="CustomerListFile"/>
+       
+    </flow>
+    <flow name="getByID">
+        <db:select config-ref="Generic_Database_Configuration" doc:name="QueryCustomerByID">
+            <db:parameterized-query><![CDATA[SELECT * FROM CUSTOMERS WHERE ID = #[flowVars.ID];]]></db:parameterized-query>
+        </db:select>
+        <flow-ref name="resultFromDatabase" doc:name="resultFromDatabase"/>
+    </flow>
+    <flow name="getByQueryParam">
+        <choice doc:name="Choice">
+         <when expression="#[message.inboundProperties.'http.query.params'.FNAME != null]">
+                <db:select config-ref="Generic_Database_Configuration" doc:name="QueryIfFNAME">
+                    <db:parameterized-query><![CDATA[SELECT * FROM CUSTOMERS WHERE FNAME = #[message.inboundProperties.'http.query.params'.FNAME];]]></db:parameterized-query>
+                </db:select>
+            </when>
+             <when expression="#[message.inboundProperties.'http.query.params'.LNAME != null]">
+                <db:select config-ref="Generic_Database_Configuration" doc:name="QueryIfLNAME">
+                    <db:parameterized-query><![CDATA[SELECT * FROM CUSTOMERS WHERE LNAME = #[message.inboundProperties.'http.query.params'.LNAME];]]></db:parameterized-query>
+                </db:select>
+            </when>
+            <when expression="#[message.inboundProperties.'http.query.params'.ADDRESS != null]">
+                <db:select config-ref="Generic_Database_Configuration" doc:name="QueryIfADDRESS">
+                    <db:parameterized-query><![CDATA[SELECT * FROM CUSTOMERS WHERE ADDRESS LIKE #[message.inboundProperties.'http.query.params'.ADDRESS];]]></db:parameterized-query>
+                </db:select>
+            </when>
+            <otherwise>
+                <db:select config-ref="Generic_Database_Configuration" doc:name="QueryListOfCustomers">
+                    <db:parameterized-query><![CDATA[Select * FROM CUSTOMERS]]></db:parameterized-query>
+                </db:select>
+            </otherwise>
+            </choice>
+        <flow-ref name="resultFromDatabase" doc:name="resultFromDatabase"/>
+    </flow>
+    <flow name="resultFromDatabase">
+     <choice doc:name="Check Abount Null Payload">
+            <when expression="#[payload.size()== 0]">
+                <set-payload value="No Data exist in Database." doc:name="NullPayload"/>
+            </when>
+            <otherwise>
+                <json:object-to-json-transformer doc:name="QueryResultToJSON"/>
+            </otherwise>
+        </choice>
+        </flow>
+</mule>
